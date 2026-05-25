@@ -1,0 +1,4 @@
+# Drop the full llama.cpp Windows zip contents here (exe + all DLLs). Do not commit binaries.
+*
+!README.md
+!.gitignore

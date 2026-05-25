@@ -1,0 +1,59 @@
+[package]
+name = "localmod"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+edition = "2021"
+default-run = "localmod"
+
+[lib]
+name = "localmod_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "localmod-server"
+path = "src/bin/localmod-server.rs"
+
+[features]
+# Default: bundled `llama-server` sidecar (no LLVM / libclang required to compile LocalMOD).
+# For in-process llama.cpp instead: `--no-default-features --features llama-engine` (needs LLVM on Windows).
+default = ["llama-sidecar"]
+llama-sidecar = []
+# In-process GGUF via llama-cpp-2 (optional; Windows builds need LLVM + LIBCLANG_PATH).
+llama-engine = ["dep:llama-cpp-2", "dep:encoding_rs"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["protocol-asset"] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "macros", "fs", "io-util", "net", "time"] }
+anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+llama-cpp-2 = { version = "0.1.146", optional = true }
+encoding_rs = { version = "0.8", optional = true }
+sysinfo = "0.31"
+nvml-wrapper = "0.10"
+walkdir = "2"
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+futures-util = "0.3"
+urlencoding = "2"
+base64 = "0.22"
+dotenvy = "0.15"
+axum = "0.8.9"
+tower-http = { version = "0.6.11", features = ["cors"] }
+tokio-stream = "0.1.18"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dxgi",
+    "Win32_System_Performance",
+] }

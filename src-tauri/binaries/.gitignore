@@ -1,0 +1,7 @@
+# Ignore junk in binaries/ root, but keep docs and llama-runtime instructions.
+*
+!.gitignore
+!README.md
+!llama-runtime/
+!llama-runtime/README.md
+!llama-runtime/.gitignore
