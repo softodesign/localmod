@@ -8,6 +8,8 @@ use serde_json::Value;
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
@@ -15,6 +17,8 @@ use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWri
 use tokio::net::TcpStream;
 
 const MIN_LLAMA_EXE_BYTES: u64 = 4096;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 fn looks_like_real_exe(path: &Path) -> bool {
     path.metadata()
@@ -336,6 +340,8 @@ pub async fn restart_server(
     // `--fit` projects a smaller footprint. `--no-repack` avoids that allocation
     // (slightly slower inference, much more likely to load).
     let mut cmd = Command::new(&exe_path);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     cmd.current_dir(&work_dir)
         .arg("--no-repack")
         .arg("-m")
@@ -367,7 +373,7 @@ pub async fn restart_server(
     let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::inherit())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(|e| {
             format!(
@@ -422,6 +428,8 @@ pub async fn restart_server_with_exe(
         .to_path_buf();
 
     let mut cmd = Command::new(&exe_path);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     cmd.current_dir(&work_dir)
         .arg("--no-repack")
         .arg("-m")
@@ -451,7 +459,7 @@ pub async fn restart_server_with_exe(
     let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::inherit())
+        .stderr(Stdio::null())
         .spawn()
         .map_err(|e| {
             format!(

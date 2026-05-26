@@ -5,11 +5,15 @@ use crate::system_metrics;
 use serde_json::{json, Value};
 use std::path::{Component, Path, PathBuf};
 use std::process::Stdio;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::time::Duration;
 
 const MAX_FILE_BYTES: usize = 256 * 1024;
 const MAX_CMD_OUTPUT: usize = 32 * 1024;
 const CMD_TIMEOUT_SECS: u64 = 30;
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 pub struct ToolContext<'a> {
     pub app_data_dir: &'a Path,
@@ -591,12 +595,17 @@ fn run_command_safe(command: &str) -> Result<String, String> {
     }
 
     #[cfg(windows)]
-    let mut child = std::process::Command::new("cmd")
-        .args(["/C", cmd])
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|e| format!("Failed to run command: {e}"))?;
+    let mut child = {
+        let mut command = std::process::Command::new("cmd");
+        command
+            .creation_flags(CREATE_NO_WINDOW)
+            .args(["/C", cmd])
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+        command
+            .spawn()
+            .map_err(|e| format!("Failed to run command: {e}"))?
+    };
 
     #[cfg(not(windows))]
     let mut child = std::process::Command::new("sh")

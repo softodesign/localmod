@@ -18,12 +18,17 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Instant;
 use tauri::Manager;
 use tauri::ipc::Channel;
 use uuid::Uuid;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -389,10 +394,13 @@ fn headless_server_exe(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 fn is_pid_running(pid: u32) -> bool {
     #[cfg(windows)]
     {
-        Command::new("tasklist")
+        let mut command = Command::new("tasklist");
+        command
+            .creation_flags(CREATE_NO_WINDOW)
             .args(["/FI", &format!("PID eq {pid}"), "/FO", "CSV", "/NH"])
             .stdout(Stdio::piped())
-            .stderr(Stdio::null())
+            .stderr(Stdio::null());
+        command
             .output()
             .ok()
             .and_then(|o| String::from_utf8(o.stdout).ok())
@@ -414,10 +422,13 @@ fn is_pid_running(pid: u32) -> bool {
 fn kill_pid(pid: u32) -> Result<(), String> {
     #[cfg(windows)]
     {
-        Command::new("taskkill")
+        let mut command = Command::new("taskkill");
+        command
+            .creation_flags(CREATE_NO_WINDOW)
             .args(["/PID", &pid.to_string(), "/T", "/F"])
             .stdout(Stdio::null())
-            .stderr(Stdio::piped())
+            .stderr(Stdio::piped());
+        command
             .status()
             .map_err(|e| e.to_string())?
             .success()
@@ -557,6 +568,8 @@ pub async fn start_headless_server(
 
     let exe = headless_server_exe(&app)?;
     let mut cmd = Command::new(&exe);
+    #[cfg(windows)]
+    cmd.creation_flags(CREATE_NO_WINDOW);
     cmd.arg("--host")
         .arg(&host)
         .arg("--port")

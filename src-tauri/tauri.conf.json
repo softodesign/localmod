@@ -34,7 +34,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["msi", "nsis"],
     "resources": [
       "binaries/localmod-server.exe",
       "binaries/llama-runtime/"
